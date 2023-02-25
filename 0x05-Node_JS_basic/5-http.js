@@ -1,37 +1,30 @@
 const http = require('http');
-const fs = require('fs');
+const { countStudents } = require('./3-read_file_async');
 
 const app = http.createServer((req, res) => {
   if (req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.write('Hello Holberton School!');
-    res.end();
+    res.end('Hello Holberton School!\n');
   } else if (req.url === '/students') {
-    const databaseName = process.argv[2];
-
-    fs.readFile(databaseName, 'utf8', (err, data) => {
-      if (err) {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.write('Internal Server Error');
-        res.end();
-      } else {
-        const students = data.split('\n').filter(student => student !== '');
-
+    countStudents(process.argv[2])
+      .then(({ studentCount, students }) => {
+        const studentList = Object.entries(students)
+          .map(([field, list]) => `Number of students in ${field}: ${list.length}. List: ${list.join(', ')}`)
+          .join('\n');
+        const responseText = `This is the list of our students\nNumber of students: ${studentCount}\n${studentList}\n`;
         res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.write('This is the list of our students\n');
-        students.forEach(student => res.write(student + '\n'));
-        res.end();
-      }
-    });
+        res.end(responseText);
+      })
+      .catch((error) => {
+        console.error(error);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal server error\n');
+      });
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.write('Not Found');
-    res.end();
+    res.end('Page not found\n');
   }
 });
-
+/* eslint-disable jest/require-hook */
+app.listen(1245);
 module.exports = app;
-
-app.listen(1245, () => {
-  console.log('Server running on port 1245');
-});
